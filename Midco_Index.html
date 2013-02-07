@@ -1,0 +1,352 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+
+    <title>MyMidco Mobile</title>
+    <script src="js/jquery-1.9.0.min.js"></script>
+    <script src="js/knockout-2.2.1.js"></script>
+    <script src="js/myMidco.js"></script>
+    <script src="js/midcoPage.js"></script>
+    <script src="js/midcoPhoneAccess.js"></script>
+    <script src="js/midcoAjax.js" type="text/javascript"></script>
+    <script src="js/cordova-2.3.0.js"></script>
+    <!--<script src="js/prettify.js"></script>-->
+    <script src="js/bootstrap.min.js"></script>
+    <link href="css/MidcoAppStyles.css" rel="stylesheet" />
+    <link href="css/accordion.css" rel="stylesheet" />
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/bootstrap-responsive.min.css" rel="stylesheet" />
+    <!--<script src="js/prettify.js"></script>-->
+    <script type="text/javascript">// <![CDATA[
+
+        var midco = null;
+        var midcoAjax = null;
+        var midcoPage = null;
+        var midcoPhoneAccess = null;
+        
+        function Midco_StartPageLoadProcedure() {
+            jQuery.support.cors = true; // force cross-site scripting (as of jQuery 1.5)
+            midco = new MyMidco();
+            midcoAjax = new MidcoAjax();
+            midcoPage = new MidcoPage();
+
+            if (navigator != null) {
+                midcoPhoneAccess = new MidcoPhoneAccess();
+            }
+
+            midcoPage.LoginButton().click(function () {
+                var usr = midcoPage.LoginUsername();
+                var pas = midcoPage.LoginPassword();
+                MidcoDevice_onResume();
+                midco.Login(usr, pas);
+            });
+
+            midcoPage.ResetModemButton().click(function () {
+                MidcoDevice_onResume();
+                midco.ResetModem();
+            });
+
+            midcoPage.TestToggleActive().click(function () {
+                var active = midcoPage.TestIdleState().html();
+                if (active == "Active") {
+                    MidcoDevice_onPause();
+                } else {
+                    MidcoDevice_onResume();
+                }
+            });
+
+            setInterval(secondTick, 1000);
+
+            if (typeof(document.addEventListener) == "function") {
+                document.addEventListener("deviceready", onDeviceReady, true);
+                midcoPage.TestMessage("Added Device ready.");
+            }
+        }
+        
+        var onDeviceReady = function () {
+            //listen for battery events
+            //window.addEventListener("batterystatus", MidcoDevice_battStat, false);
+            //midcoPage.TestMessage("Added Batt status.");
+            document.addEventListener("pause", MidcoDevice_onPause, false);
+            midcoPage.TestMessage("Added pause.");
+            document.addEventListener("resume", MidcoDevice_onResume, false);
+            midcoPage.TestMessage("Added resume.");
+
+        };
+
+        function secondTick() {
+            midco.CheckActivityState();
+            midcoPage.TestIdleSeconds().html(midco.timePaused);
+        };
+                
+        var MidcoDevice_battStat = function (info) {
+            midcoPage.TestMessage("hit Batt stat function");
+            var statusdiv = $('#testBatteryStatus')
+            var s = "<p><b>Battery Status</b><br/>";
+                        s += "Level is "+info.level + "<br/>";
+                        s += "Plugged in is "+info.isPlugged;
+                        s += "</p>";
+                        statusdiv.html(s);
+
+        };
+
+        function MidcoDevice_onPause() {
+            midcoPage.TestMessage("hit on pause function");
+            midco.timePaused = 0;
+            midco.IsActive = false;
+            midcoPage.TestIdleState().html('Idle');
+        };
+        function MidcoDevice_onResume() {
+            midcoPage.TestMessage("hit on resume function");
+            midco.timePaused = 0;
+            midco.IsActive = true;
+            midcoPage.TestIdleState().html('Active');
+        };
+                
+        window.onerror = function (msg, url, linenumber) {
+            console.log("Error - msg:" + msg);
+        }
+
+        // ]]></script>
+</head>
+<body>
+    <div id="testArea" style="display:none;border:1pt solid black;">
+        <span id="testIdleState">Active</span>: <span id="testIdleSeconds"></span>
+        <input type="button" id="testToggleActive" value="Toggle Pause" />
+        <span id="testBatteryStatus"></span>
+        <span id="testMessage" style="color:black"></span>
+    </div>
+    <div id="loginForm">
+        <h1 style="text-align: center;">
+                                <span>
+                                    <img src="img/Midcontinent_Res_V_sm.jpg" />
+                                </span>
+                            </h1>
+        <hr />
+        <div class="padding5" style="text-align:center;">
+            <table style="margin:auto;">
+                <tr>
+                <td align="left">
+                    <div><strong>Username:</strong><span class="loginRequired"></span></div>
+                    <div>
+                        <input type="text" id="tbLoginUsername" value="austinc00" /></div>
+                    <div><strong>Password:</strong><span class="loginRequired"></span></div>
+                    <div>
+                        <input type="password" id="tbLoginPassword" value="024559116" /></div>
+                    <div>&nbsp;</div>
+                       <div id="btnLoginSubmit" class="button button_Active">
+                           <br />
+                            <strong id="loginText">Login</strong>
+                           <br />
+                           <br />
+                        </div>
+                </td>
+                </tr>
+            </table>
+            <div>
+                     
+                        <!--<input type="button" id="btnLoginSubmit" value="Login" />-->
+                        <br /><br />
+                        <strong><span id="loginMessage"></span></strong>
+                    </div>
+        </div>
+    </div>
+
+    <div id="mainContent" style="display: none">
+        <div style="display: none;">
+            
+            
+        </div>
+                <div class="contentpan">
+                    <div class="page" id="post-4">
+                        <div class="content">
+                            <h1 style="text-align: center;">
+                                <span>
+                                    <img src="img/Midcontinent_Res_V_sm.jpg" />
+                                </span>
+                            </h1>
+                            <div class="accordiandiv">
+                                <div id="div2615826" class="trigger_opt" onclick='midcoPage.ToggleTab("2615826");MidcoDevice_onResume();'>
+                                    <div style="margin: auto; display: inline-table; width: 100%;">
+                                        <div style="float: left; padding-top: 3px; padding-left: 3px;">
+                                            <img src="img/h2_trigger_a-hover.gif" width="25" height="25" id="img2615826" alt="Hours" />
+                                        </div>
+                                        <div style="padding-left: 3px;">
+                                            <p>My Account</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: none;" class="toggle_container" id="tooglediv2615826">
+                                    <div class="block">
+                                        <h2>Currently selected account:</h2>
+                                        <br />
+                                        <select id="midcoAccountList"></select>
+                                        <br />
+                                        <hr />
+                                        <span id="midcoCustName"></span>
+                                        <br />
+                                        <span id="midcoCustAddress1"></span>
+                                        <br />
+                                        <span id="midcoCustAddress2"></span>
+                                        <br />
+                                        <br />
+                                        <br />
+                                        Current Balance: $<span id="midcoCustCurrentBalance"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="accordiandiv">
+                                <div id="div2188939" class="trigger_opt" onclick='midcoPage.ToggleTab("2188939");MidcoDevice_onResume(); midco.ServicesTabToggled();'>
+                                    <div style="margin: auto; display: inline-table; width: 100%;">
+                                        <div style="float: left; padding-top: 3px; padding-left: 3px;">
+                                            <img src="img/h2_trigger_a-hover.gif" width="25" height="25" id="img2188939" alt="Coupons" />
+                                        </div>
+                                        <div style="padding-left: 3px;">
+                                            <p>My Services</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: none;" class="toggle_container" id="tooglediv2188939">
+                                    <div class="block">
+                                        <div id="servicesLoadingDiv">
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <table><tr><td align="center"><img src="img/wait.gif" /></td></tr></table>
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <br />
+                                        </div>
+                                        <div id="servicesError">
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <table><tr><td align="center"><img src="img/warning.png" /></td></tr></table>
+                                            <br />
+                                            <br />
+                                            <div id="servicesErrorMessage"></div>
+                                            <br />
+                                            <br />
+                                        </div>
+                                        <div id="servicesInformation">
+                                            <div id="servicesCable">
+                                                <h3>Cable</h3>
+                                                <br />
+                                                <p><strong>TV Anywhere!</strong></p>
+                                                <p>Watch your Midcontinent Services right here from your mobile device.</p>
+                                                <br />
+                                                <div id="tvAnywhereStations" class="row">
+                                                    
+                                                </div>   
+                                                <br />
+                                                <br />                                             
+                                            </div>
+                                            <div id="servicesData">
+                                                <h3>Data</h3>
+                                                <br />
+                                                <p>Data usage as of: <span class="dyn_todaysDate"></span></p>
+                                                <img id="bandwidthUsageImage" src="img/BandwidthUsage.PNG" />
+                                                <br />
+                                                <br />
+                                                <h4>Troubleshooting</h4>
+                                                Hit the button to reset the modem:
+                                                <br />
+                                                <br />
+                                                <div id="servicesResetModemButton" style="display:none;" class="button button_Active">
+                                                   <br />
+                                                    <strong id="resetModemButtonText">Reset Modem</strong>
+                                                   <br />
+                                                   <br />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="accordiandiv">
+                                <div id="div2070549" class="trigger_opt" onclick='midcoPage.ToggleTab("2070549"); MidcoDevice_onResume(); midco.PaymentTabToggled();'>
+                                    <div style="margin: auto; display: inline-table; width: 100%;">
+                                        <div style="float: left; padding-top: 3px; padding-left: 3px;">
+                                            <img src="img/h2_trigger_a-hover.gif" width="25" height="25" id="img2070549" alt="Services" />
+                                        </div>
+                                        <div style="padding-left: 3px;">
+                                            <p>Statements/Payments</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: none;" class="toggle_container" id="tooglediv2070549">
+                                    <div class="block">
+                                        <div id="paymentsLoadingDiv" style="text-align:center;">
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <table><tr><td align="center"><img src="img/wait.gif" /></td></tr></table>
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <br />
+                                        </div>
+                                        <div id="paymentsError" style="text-align:center;display:none;">
+                                            <br />
+                                            <br />
+                                            <br />
+                                            <table><tr><td align="center"><img src="img/warning.png" /></td></tr></table>
+                                            <br />
+                                            <br />
+                                            <div id="paymentsErrorMessage"></div>
+                                            <br />
+                                            <br />
+                                        </div>
+                                        <div id="paymentsInformation" style="display:none;">
+                                            <div id="paymentsMakeAPayment">
+                                                <h3>Make a payment</h3>
+                                                Select a payment account:<br />
+                                                <select id="paymentSelectPaymentAccount"></select>
+                                                <br />
+                                                <br />
+                                            </div>
+                                            <div id="paymentsScheduledPayments">
+                                                <h3>Scheduled Payments</h3>
+                                                ...
+                                            </div>
+                                            <div id="paymentsPastPayments">
+                                                <h3>Past Payments</h3>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Status</th>
+                                                            <th>Statement Name</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody data-bind="foreach: pastPayments">
+                                                        <tr>
+                                                            <td data-bind="text: Status"></td>
+                                                            <td data-bind="text: StatementName"></td>
+                                                        </tr>    
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    </div>
+
+    <script type="text/javascript">// <![CDATA[
+        $(document).ready(function () {
+            Midco_StartPageLoadProcedure();            
+        });
+        // ]]></script>
+</body>
+</html>
